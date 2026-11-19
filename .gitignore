@@ -1,0 +1,6 @@
+.eslintcache
+dist
+node_modules
+tsconfig.tsbuildinfo
+backups
+.DS_Store

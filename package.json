@@ -1,0 +1,30 @@
+{
+  "name": "social-metrics",
+  "version": "1.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "rm -rf ./dist/ && tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint --cache --quiet",
+    "test": "tsc --noEmit && eslint",
+    "migrate-handle": "tsx scripts/migrate-handle.mts",
+    "clean-bad-rows": "tsx scripts/clean-bad-rows.mts",
+    "deploy": "sh scripts/deploy.sh"
+  },
+  "author": "Jason Coon",
+  "license": "ISC",
+  "description": "Collects daily follower counts for a list of Bluesky and Mastodon profiles into DynamoDB, and serves them to bsky-metrics / masto-metrics.",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1171.0",
+    "@aws-sdk/lib-dynamodb": "^3.1171.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^24.19.2",
+    "eslint": "^10.15.0",
+    "globals": "^17.14.0",
+    "tsx": "^4.23.15",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.73.0"
+  }
+}
