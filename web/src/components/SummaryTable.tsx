@@ -4,12 +4,16 @@ import { type CSSProperties, useState } from "react";
 import type { Delta, ProfileSummary } from "../data/summary";
 import { useIsMobile } from "../hooks/useMediaQuery";
 import { colors, formatCount } from "../theme";
-import type { Profile } from "../types";
+import { profileOf } from "../platforms/lookup";
+import type { Profile, ProfileError, ProfileResult } from "../types";
 import { type DeltaMeasure, DeltaText } from "./DeltaText";
 import { Sparkline } from "./Sparkline";
 
 interface Row extends ProfileSummary {
-  profile?: Profile | null;
+  /** Whether the live profile lookup has finished (successfully or not). */
+  profileLoaded: boolean;
+  profile?: Profile;
+  profileError?: ProfileError;
   followers?: number;
 }
 
@@ -34,7 +38,7 @@ export function SummaryTable({
   hrefFor,
 }: {
   summaries: readonly ProfileSummary[];
-  profiles: ReadonlyMap<string, Profile | null>;
+  profiles: ReadonlyMap<string, ProfileResult>;
   rangeLabel: string;
   labelFor: (handle: string) => string;
   colorFor: (handle: string) => string | undefined;
@@ -44,8 +48,16 @@ export function SummaryTable({
   const mobile = useIsMobile();
 
   const rows: Row[] = summaries.map((s) => {
-    const profile = profiles.get(s.handle);
-    return { ...s, profile, followers: profile?.followers ?? s.latest?.followers };
+    const result = profiles.get(s.handle);
+    const profile = profileOf(result);
+    return {
+      ...s,
+      profileLoaded: result !== undefined,
+      profile,
+      profileError: result && "error" in result ? result.error : undefined,
+      // Fall back to the latest stored count when the live lookup failed.
+      followers: profile?.followers ?? s.latest?.followers,
+    };
   });
 
   const deltaColumn = (title: string, key: keyof Row, get: (r: Row) => Delta | undefined) => ({
@@ -194,8 +206,13 @@ export function SummaryTable({
       sorter: byNumber((r) => (r.staleSince ? 1000 : 0) + r.gaps),
       render: (_, r) => (
         <Flex gap={4} wrap>
-          {r.profile === null && <Tag color="error">Profile not found</Tag>}
-          {!r.latest && r.profile !== undefined && <Tag>No history</Tag>}
+          {r.profileError === "notFound" && <Tag color="error">Profile not found</Tag>}
+          {r.profileError === "unavailable" && (
+            <Tooltip title="The server didn't respond to the browser (some servers block cross-site requests). Followers and trends come from the stored daily history.">
+              <Tag>Live profile unavailable</Tag>
+            </Tooltip>
+          )}
+          {!r.latest && r.profileLoaded && <Tag>No history</Tag>}
           {r.staleSince && (
             <Tooltip title="No data in the last 3+ days. The account may have moved or been renamed.">
               <Tag icon={<WarningOutlined />} color="warning">

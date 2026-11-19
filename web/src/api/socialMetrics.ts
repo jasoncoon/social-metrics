@@ -3,7 +3,7 @@ import type { MetricPoint, SocialName } from "../types";
 
 /**
  * The API only allows CORS from https://jasoncoon.github.io, so local dev/preview
- * goes through a same-origin Vite proxy (see each app's vite.config.ts).
+ * goes through a same-origin Vite proxy (see web/vite.config.ts).
  */
 const API = ["localhost", "127.0.0.1"].includes(globalThis.location?.hostname)
   ? "/social-metrics-api/query"

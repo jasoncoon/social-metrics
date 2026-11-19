@@ -13,7 +13,7 @@
   },
   "author": "Jason Coon",
   "license": "ISC",
-  "description": "Collects daily follower counts for a list of Bluesky and Mastodon profiles into DynamoDB, and serves them to bsky-metrics / masto-metrics.",
+  "description": "Collects daily follower counts for a list of Bluesky and Mastodon profiles into DynamoDB, and serves them to the social-metrics web site.",
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.1171.0",
     "@aws-sdk/lib-dynamodb": "^3.1171.0"

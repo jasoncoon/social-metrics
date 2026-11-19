@@ -5,7 +5,7 @@ import tseslint from "typescript-eslint";
 /** @type {import('eslint').Linter.Config[]} */
 export default [
   {
-    ignores: ["dist/**/*", "web-core/**/*", "backups/**/*"],
+    ignores: ["dist/**/*", "web/**/*", "backups/**/*"],
   },
   {
     files: ["src/**/*.mts", "scripts/**/*.mts"],

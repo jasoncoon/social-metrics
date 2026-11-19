@@ -1,6 +1,6 @@
 {
   "include": ["src/", "scripts/"],
-  "exclude": ["**/cdk.out", "**/*.js", "web-core"],
+  "exclude": ["**/cdk.out", "**/*.js", "web"],
   "compilerOptions": {
     "esModuleInterop": true,
     "skipLibCheck": true,

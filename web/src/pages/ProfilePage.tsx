@@ -11,7 +11,8 @@ import { summarize } from "../data/summary";
 import { useIsMobile } from "../hooks/useMediaQuery";
 import { useUrlParams } from "../hooks/useUrlParams";
 import { colors } from "../theme";
-import type { MetricPoint, Platform, Profile } from "../types";
+import { profileOf } from "../platforms/lookup";
+import type { MetricPoint, Platform, ProfileResult } from "../types";
 import { parseRange, profileHref } from "./DashboardPage";
 
 /** Search box shared by the single-profile pages. */
@@ -54,7 +55,7 @@ export function TrackedProfiles({ platform, hrefFor }: { platform: Platform; hre
 
 interface Loaded {
   handle: string;
-  profile: Profile | null;
+  result: ProfileResult;
   history: MetricPoint[];
 }
 
@@ -69,8 +70,8 @@ export function ProfilePage({ platform }: { platform: Platform }) {
     if (!handle) return;
     let cancelled = false;
     void Promise.all([platform.getProfile(handle), getFollowerHistory(platform.name, handle)]).then(
-      ([profile, history]) => {
-        if (!cancelled) setLoaded({ handle, profile: profile ?? null, history });
+      ([result, history]) => {
+        if (!cancelled) setLoaded({ handle, result, history });
       }
     );
     return () => {
@@ -79,6 +80,7 @@ export function ProfilePage({ platform }: { platform: Platform }) {
   }, [handle, platform]);
 
   const current = loaded?.handle === handle ? loaded : undefined;
+  const profile = profileOf(current?.result);
 
   const view = useMemo(() => {
     if (!current?.history.length) return undefined;
@@ -95,7 +97,7 @@ export function ProfilePage({ platform }: { platform: Platform }) {
   );
 
   return (
-    <AppShell platform={platform} current="profile" title={current?.profile?.displayName ?? handle}>
+    <AppShell platform={platform} current="profile" title={profile?.displayName ?? handle}>
       <PageTitle>Profile</PageTitle>
       <HandleSearch platform={platform} handle={handle} onSearch={search} />
 
@@ -105,9 +107,9 @@ export function ProfilePage({ platform }: { platform: Platform }) {
         <Spin style={{ display: "block", padding: 80 }} />
       ) : (
         <>
-          {current.profile ? (
+          {profile ? (
             <ProfileHeader
-              profile={current.profile}
+              profile={profile}
               extra={
                 platform.extraProfileLinks && (
                   <Flex gap={8}>
@@ -120,8 +122,16 @@ export function ProfilePage({ platform }: { platform: Platform }) {
                 )
               }
             />
+          ) : "error" in current.result && current.result.error === "unavailable" ? (
+            <Alert
+              type="warning"
+              showIcon
+              title={`Couldn't reach the server for ${handle}'s live profile`}
+              description="Some servers block requests from other websites. Follower history below is still up to date."
+              style={{ marginBottom: 16 }}
+            />
           ) : (
-            <Alert type="error" showIcon title={`Couldn't load the profile for ${handle}`} style={{ marginBottom: 16 }} />
+            <Alert type="error" showIcon title={`Profile not found: ${handle}`} style={{ marginBottom: 16 }} />
           )}
 
           <Card
@@ -169,7 +179,7 @@ export function ProfilePage({ platform }: { platform: Platform }) {
                 <FollowersChart
                   aligned={view.aligned}
                   handles={[handle]}
-                  labelFor={() => current.profile?.displayName ?? handle}
+                  labelFor={() => profile?.displayName ?? handle}
                   colorFor={() => colors.series[0]}
                   mode="absolute"
                   height={420}

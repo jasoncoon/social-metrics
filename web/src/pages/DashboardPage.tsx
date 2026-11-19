@@ -12,6 +12,7 @@ import { alignSeries, dataBounds, type RangeValue, rangeStart, rangeTitle, type 
 import { type ColorPreset, combined, headlines, pickColored, rankMovers, summarize } from "../data/summary";
 import { useDashboardData } from "../hooks/useDashboardData";
 import { type ParamPatch, useUrlParams } from "../hooks/useUrlParams";
+import { profileOf } from "../platforms/lookup";
 import { colors, MAX_HIGHLIGHTS } from "../theme";
 import type { Platform } from "../types";
 
@@ -71,7 +72,7 @@ export function DashboardPage({ platform }: { platform: Platform }) {
 
   // Largest followers first: legend, small multiples and table all share this order.
   const ordered = useMemo(() => {
-    const size = (h: string) => summaryMap.get(h)?.latest?.followers ?? data.profiles.get(h)?.followers ?? 0;
+    const size = (h: string) => summaryMap.get(h)?.latest?.followers ?? profileOf(data.profiles.get(h))?.followers ?? 0;
     return [...handles].sort((a, b) => size(b) - size(a));
   }, [handles, summaryMap, data.profiles]);
 

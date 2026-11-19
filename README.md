@@ -1,22 +1,44 @@
 # Social Metrics
 
 Collects a daily follower count for a list of Bluesky and Mastodon profiles into DynamoDB
-(table `social-metrics`), and serves the history to
-[bsky-metrics](https://jasoncoon.github.io/bsky-metrics/) and
-[masto-metrics](https://jasoncoon.github.io/masto-metrics/).
+(table `social-metrics`), and charts the history at
+[jasoncoon.github.io/social-metrics](https://jasoncoon.github.io/social-metrics/).
 
-- `src/handles.json`: the tracked profiles (also the default list in both web apps).
+- `src/handles.json`: the tracked profiles (also the default lists on the site).
 - `src/updater.mts`: Lambda that records today's count for each handle. When a fetch fails it
   records nothing (so the apps show a gap) and logs a line starting `SOCIAL_METRICS_FETCH_FAILURES`
   (good for a CloudWatch metric filter or alarm).
 - `src/query.mts`: Lambda behind `https://social-metrics.evilgeniuslabs.org/query?social=…&handle=…`.
-- `web-core/`: shared React code for the two web apps (see their READMEs).
+- `web/`: the GitHub Pages site (see [Web site](#web-site)).
 
 ```sh
 npm install
 npm test           # type-check + lint
 npm run build      # dist/ (includes handles.json)
 ```
+
+## Web site
+
+`web/` is one Vite + React + Ant Design site with a page set per platform:
+
+| Path | Page |
+|---|---|
+| `/` | Home: links to both dashboards |
+| `/bsky/`, `/bsky/profile.html` | Bluesky dashboard and single-profile view |
+| `/masto/`, `/masto/profile.html` | Mastodon dashboard and single-profile view |
+| `/masto/followers.html`, `/masto/posts.html` | Any Mastodon account's followers and top posts |
+
+```sh
+cd web
+npm install
+npm run dev        # http://localhost:5173 (proxies the API, which only allows CORS from github.io)
+npm run check      # type-check + lint + tests
+npm run build      # web/dist/
+```
+
+Pushing to `main` deploys it with [.github/workflows/pages.yml](.github/workflows/pages.yml) when
+anything under `web/` or `src/handles.json` changes (or run the workflow by hand). The repo's
+Pages source must be set to **GitHub Actions** (Settings → Pages).
 
 ## Deploy
 

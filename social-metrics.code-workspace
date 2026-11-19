@@ -1,12 +1,6 @@
 {
 	"folders": [
 		{
-			"path": "../bsky-metrics"
-		},
-		{
-			"path": "../masto-metrics"
-		},
-		{
 			"path": "."
 		}
 	]

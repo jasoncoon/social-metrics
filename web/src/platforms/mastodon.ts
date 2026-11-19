@@ -1,6 +1,7 @@
 import handles from "../../../src/handles.json";
 import { sanitizeHtml } from "../html";
-import type { Platform, Profile } from "../types";
+import type { Platform, Profile, ProfileError } from "../types";
+import { lookupJson } from "./lookup";
 
 /** The subset of a Mastodon Account entity that the apps use. */
 export interface MastodonAccount {
@@ -32,21 +33,19 @@ export function parseMastodonHandle(handle: string) {
   return { server, username: rawUsername.replace(/^@/, "") };
 }
 
-export async function lookupMastodonAccount(
+/** Looks up an account on its server, saying why when that fails. */
+export async function fetchMastodonAccount(
   handle: string
-): Promise<{ server: string; account: MastodonAccount } | undefined> {
+): Promise<{ server: string; account: MastodonAccount } | { error: ProfileError }> {
   const { server, username } = parseMastodonHandle(handle);
-  if (!server || !username) return undefined;
-  try {
-    const response = await fetch(
-      `https://${server}/api/v1/accounts/lookup?acct=${encodeURIComponent(username)}`
-    );
-    if (!response.ok) return undefined;
-    return { server, account: (await response.json()) as MastodonAccount };
-  } catch (error) {
-    console.error(`error getting Mastodon profile ${handle}:`, error);
-    return undefined;
-  }
+  if (!server || !username) return { error: "notFound" };
+  // 404 = no such account; 410 = gone (deleted or suspended).
+  const result = await lookupJson<MastodonAccount>(
+    `https://${server}/api/v1/accounts/lookup?acct=${encodeURIComponent(username)}`,
+    [404, 410],
+    `Mastodon ${handle}`
+  );
+  return "error" in result ? result : { server, account: result.data };
 }
 
 export function toProfile(handle: string, a: MastodonAccount): Profile {
@@ -69,8 +68,8 @@ export function toProfile(handle: string, a: MastodonAccount): Profile {
 export const mastodon: Platform = {
   name: "Mastodon",
   title: "Mastodon Metrics",
-  repoUrl: "https://github.com/jasoncoon/masto-metrics",
-  otherApp: { name: "Bluesky Metrics", url: "https://jasoncoon.github.io/bsky-metrics/" },
+  repoUrl: "https://github.com/jasoncoon/social-metrics",
+  otherApp: { name: "Bluesky Metrics", url: "../bsky/" },
   pages: [
     { key: "dashboard", label: "Dashboard", href: "./" },
     { key: "profile", label: "Profile", href: "./profile.html" },
@@ -82,8 +81,8 @@ export const mastodon: Platform = {
   normalizeHandle: normalizeMastodonHandle,
   shortLabel: (handle) => parseMastodonHandle(handle).username,
   getProfile: async (handle) => {
-    const result = await lookupMastodonAccount(handle);
-    return result && toProfile(handle, result.account);
+    const result = await fetchMastodonAccount(handle);
+    return "error" in result ? result : { profile: toProfile(handle, result.account) };
   },
   extraProfileLinks: (handle) => [
     { key: "followers", label: "Followers", href: `./followers.html?handle=${encodeURIComponent(handle)}` },

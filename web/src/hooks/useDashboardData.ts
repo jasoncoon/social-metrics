@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { getFollowerHistory, mapLimit } from "../api/socialMetrics";
-import type { MetricPoint, Platform, Profile } from "../types";
+import type { MetricPoint, Platform, ProfileResult } from "../types";
 
 const CONCURRENCY = 6;
 
 export interface DashboardData {
-  /** undefined = still loading, null = failed. */
-  profiles: ReadonlyMap<string, Profile | null>;
+  /** Live profile lookups; a missing entry is still loading. */
+  profiles: ReadonlyMap<string, ProfileResult>;
   histories: ReadonlyMap<string, MetricPoint[]>;
   done: number;
   total: number;
@@ -37,8 +37,8 @@ export function useDashboardData(platform: Platform, handles: readonly string[])
       });
 
     void mapLimit(list, CONCURRENCY, async (handle) => {
-      const profile = await platform.getProfile(handle);
-      tick((s) => ({ profiles: new Map(s.profiles).set(handle, profile ?? null) }));
+      const result = await platform.getProfile(handle);
+      tick((s) => ({ profiles: new Map(s.profiles).set(handle, result) }));
     });
     void mapLimit(list, CONCURRENCY, async (handle) => {
       const history = await getFollowerHistory(platform.name, handle);

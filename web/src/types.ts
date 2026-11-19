@@ -17,6 +17,14 @@ export interface Profile {
   id: string;
 }
 
+/**
+ * Why a live profile lookup failed: the server says there's no such account,
+ * or it couldn't be reached from the browser (network error, CORS block, rate limit, 5xx).
+ */
+export type ProfileError = "notFound" | "unavailable";
+
+export type ProfileResult = { profile: Profile } | { error: ProfileError };
+
 /** One day's follower count. `null` means no usable data that day (shown as a gap). */
 export interface MetricPoint {
   date: string;
@@ -42,7 +50,7 @@ export interface Platform {
   normalizeHandle(input: string): string;
   /** Compact label for chart legends. */
   shortLabel(handle: string): string;
-  getProfile(handle: string): Promise<Profile | undefined>;
+  getProfile(handle: string): Promise<ProfileResult>;
   /** Extra per-profile links (e.g. Mastodon followers / posts pages). */
   extraProfileLinks?: (handle: string) => NavPage[];
 }

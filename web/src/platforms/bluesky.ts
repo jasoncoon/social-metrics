@@ -1,6 +1,7 @@
 import handles from "../../../src/handles.json";
 import { escapeText } from "../html";
-import type { Platform, Profile } from "../types";
+import type { Platform, ProfileResult } from "../types";
+import { lookupJson } from "./lookup";
 
 interface BlueskyApiProfile {
   did: string;
@@ -24,14 +25,17 @@ export function normalizeBlueskyHandle(input: string) {
     .toLowerCase();
 }
 
-export async function getBlueskyProfile(handle: string): Promise<Profile | undefined> {
-  try {
-    const response = await fetch(
-      `https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile?actor=${encodeURIComponent(handle)}`
-    );
-    if (!response.ok) return undefined;
-    const p = (await response.json()) as BlueskyApiProfile;
-    return {
+export async function getBlueskyProfile(handle: string): Promise<ProfileResult> {
+  // The AppView answers 400 for unknown, deactivated or taken-down actors.
+  const result = await lookupJson<BlueskyApiProfile>(
+    `https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile?actor=${encodeURIComponent(handle)}`,
+    [400, 404],
+    `Bluesky ${handle}`
+  );
+  if ("error" in result) return result;
+  const p = result.data;
+  return {
+    profile: {
       id: p.did,
       handle: p.handle,
       displayName: p.displayName || p.handle,
@@ -43,18 +47,15 @@ export async function getBlueskyProfile(handle: string): Promise<Profile | undef
       posts: p.postsCount ?? 0,
       createdAt: p.createdAt,
       url: `https://bsky.app/profile/${p.handle}`,
-    };
-  } catch (error) {
-    console.error(`error getting Bluesky profile ${handle}:`, error);
-    return undefined;
-  }
+    },
+  };
 }
 
 export const bluesky: Platform = {
   name: "Bluesky",
   title: "Bluesky Metrics",
-  repoUrl: "https://github.com/jasoncoon/bsky-metrics",
-  otherApp: { name: "Mastodon Metrics", url: "https://jasoncoon.github.io/masto-metrics/" },
+  repoUrl: "https://github.com/jasoncoon/social-metrics",
+  otherApp: { name: "Mastodon Metrics", url: "../masto/" },
   pages: [
     { key: "dashboard", label: "Dashboard", href: "./" },
     { key: "profile", label: "Profile", href: "./profile.html" },
